@@ -63,10 +63,9 @@ class WordPress_Radio_Taxonomy {
 		add_action( 'load-edit.php', array( $this, 'make_hierarchical' ) );
 
 		// add nonce to quick edit/bulk edit
-		add_action( 'quick_edit_custom_box', array( $this, 'quick_edit_nonce' ) );	
+		add_action( 'quick_edit_custom_box', array( $this, 'quick_edit_nonce' ) );
 
 	}
-
 
 	/**
 	 * Remove the default metabox
@@ -340,19 +339,26 @@ class WordPress_Radio_Taxonomy {
 		// OK, we must be authenticated by now: we need to find and save the data
 		if ( isset( $_REQUEST["radio_tax_input"]["{$this->taxonomy}"] ) ){
 
-			$terms = (array) $_REQUEST["radio_tax_input"]["{$this->taxonomy}"]; 
+			$terms = (array) $_REQUEST["radio_tax_input"]["{$this->taxonomy}"];
+
+			$terms = array_map('intval', $terms);
+
+			$allow_multiple = apply_filters( 'radio_buttons_for_taxonomies_allow_multiple_terms', $terms);
+			if ($allow_multiple !== true) $allow_multiple = false;
 
 			// if category and not saving any terms, set to default
 			if ( 'category' == $this->taxonomy && empty ( $terms ) ) {
-				$single_term = intval( get_option( 'default_category' ) );
+				$object_terms = intval(get_option('default_category'));
+			} else {
+				$object_terms = $terms;
 			}
 
-			// make sure we're only saving 1 term
-			$single_term = intval( array_shift( $terms ) );
+			if (!$allow_multiple)
+				$object_terms = [intval(array_shift( $terms ))];
 
 			// set the single terms
 			if ( current_user_can( $this->tax_obj->cap->assign_terms ) ) 
-				wp_set_object_terms( $post_id, $single_term, $this->taxonomy );
+				wp_set_object_terms( $post_id, $object_terms, $this->taxonomy );
 
 		}		
 
